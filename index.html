@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Buscador – Aulas de Cerâmica</title>
+<meta name="color-scheme" content="light dark">
+<style>
+  :root{
+    --ink:#0b0b0b; --line:#111; --teal:#49d1d1; --card:#fff; --bg:#f4fbfb; --accent:#2563eb;
+    --topbar-h:0px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --ink:#f1f1f1; --line:#e5e5e5; --teal:#2aa9a9; --card:#111; --bg:#0b0b0b; --accent:#7aa2ff; }
+  }
+  *{ box-sizing:border-box }
+  html,body{ height:100% }
+  body{ margin:0; background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; }
+
+  /* TOPO FIXO (só busca + navegação + status) */
+  .topbar{
+    position:fixed; inset:0 0 auto 0; z-index:1000;
+    background:var(--teal); border-bottom:2px solid var(--line); padding:8px 10px;
+  }
+  .top-inner{ max-width:1100px; margin:0 auto; display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center; }
+  .search-input{
+    display:flex; gap:8px; align-items:center; background:var(--card);
+    border:2px solid var(--line); border-radius:999px; padding:4px 8px;
+  }
+  .search-input input{ width:100%; border:0; outline:0; font-size:16px; padding:8px 6px; background:transparent; color:#000; }
+  .search-input button{ border:2px solid var(--line); background:var(--card); font-weight:800; border-radius:999px; padding:8px 12px; cursor:pointer; }
+  .nav{ display:flex; gap:8px; align-items:center; }
+  .nav-btn{ width:40px; height:40px; border-radius:50%; border:2px solid var(--line); background:var(--card); font-size:18px; font-weight:900; display:grid; place-items:center; cursor:pointer; }
+  .counter{ font-weight:800; font-size:13px; padding:0 4px }
+  .status{ max-width:1100px; margin:6px auto 0; padding:0 2px 2px; font-size:12px; display:flex; gap:10px; align-items:center; }
+  .status .snippet{ flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .status .link{ flex:0 0 auto; max-width:55%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#0039cc; }
+  .spacer{ height:var(--topbar-h) }
+  mark{ background:#fff283; padding:0 .12em }
+
+  /* ABAS */
+  .toolbar{
+    position:sticky; top:var(--topbar-h); z-index:5;
+    background:var(--bg);
+    max-width:1100px; margin:8px auto; padding:6px 10px;
+    display:flex; gap:10px; justify-content:center; flex-wrap:wrap; border-bottom:1px solid rgba(0,0,0,.08);
+  }
+  .tabbtn{ background:var(--card); border:3px solid var(--line); border-radius:999px; padding:10px 16px; font-weight:900; cursor:pointer; }
+  .tabbtn.active{ background:var(--line); color:var(--card) }
+
+  /* VISOR */
+  .viewer-wrap{ max-width:1400px; margin:10px auto 20px; border:6px solid var(--line); background:var(--card); border-radius:12px; overflow:hidden; }
+  .viewer-head{ margin:0; padding:10px 12px; background:#cfcfcf; text-align:center; font-size:clamp(18px,3vw,34px); font-weight:900; text-transform:uppercase; border-bottom:4px solid var(--line) }
+  .viewer{ height: calc(100svh - var(--topbar-h) - 120px); /* ajusta com o sticky das abas/título */ overflow:auto; padding:10px; scroll-behavior:smooth; font-size:16px; line-height:1.4; -webkit-overflow-scrolling:touch; }
+
+  /* Normalização */
+  .viewer .content *{ max-width:100% !important }
+  .viewer .content img, .viewer .content video, .viewer .content iframe{ display:block; height:auto }
+  .viewer .content table{ width:100% !important; border-collapse:collapse; table-layout:fixed }
+  .viewer .content td, .viewer .content th{ word-wrap:break-word; vertical-align:top }
+  .viewer .content a{ word-break:break-all }
+  .viewer .content p{ margin:6px 0 }
+  .viewer .content h1, .viewer .content h2, .viewer .content h3{ font-size:1em; margin:.6em 0 .4em }
+  .viewer .content ul, .viewer .content ol{ padding-left:18px; margin:6px 0 }
+
+  /* Destaque do bloco encontrado */
+  .hit-highlight{ outline:3px solid #ffb100; background:#fff6c5 }
+
+  @media (max-width:640px){
+    .top-inner{ grid-template-columns:1fr; }
+    .status{ padding:2px 6px }
+    .viewer{ height: calc(100svh - var(--topbar-h) - 140px); }
+    .tabbtn{ padding:9px 14px }
+    .viewer-wrap{ border-width:4px; margin:8px 10px 14px }
+    .viewer-head{ border-bottom-width:3px; font-size:1.1rem }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOPO FIXO: busca + navegação + status -->
+<header class="topbar" id="topbar">
+  <div class="top-inner">
+    <form id="searchForm" class="search-input" role="search" aria-label="Buscar conteúdos">
+      <input id="q" name="q" type="search" placeholder="Ex.: barbotina, fornecedor, torno..." required autocomplete="on" inputmode="search" />
+      <button id="searchBtn" type="submit" aria-label="Executar busca">Buscar</button>
+    </form>
+    <div class="nav" aria-label="Navegação de resultados">
+      <button class="nav-btn" id="prevBtn" title="Anterior" aria-label="Resultado anterior">◀</button>
+      <span class="counter" id="resultCounter">0/0</span>
+      <button class="nav-btn" id="nextBtn" title="Próximo" aria-label="Próximo resultado">▶</button>
+    </div>
+  </div>
+  <div class="status" id="statusRow" aria-live="polite">
+    <div class="snippet" id="resultSnippet"><em>Digite e pesquise. Use ◀ ▶ para navegar.</em></div>
+    <a class="link" id="resultLink" href="#" target="_blank" rel="noopener noreferrer" style="display:none"></a>
+  </div>
+</header>
+
+<!-- empurra o conteúdo abaixo do topo fixo -->
+<div class="spacer" id="spacer"></div>
+
+<!-- ABAS + VISOR -->
+<nav class="toolbar" id="toolbar">
+  <button class="tabbtn" data-key="ceramica">Aula de Cerâmica</button>
+  <button class="tabbtn" data-key="torno">Torno</button>
+  <button class="tabbtn" data-key="esmalte">Esmalte</button>
+</nav>
+
+<section class="viewer-wrap">
+  <h2 class="viewer-head" id="viewerTitle">Aula de Cerâmica</h2>
+  <div class="viewer"><div id="viewerContent" class="content">Carregando…</div></div>
+</section>
+
+<script>
+/* ========= CONFIG ========= */
+const PAGES = {
+  ceramica:{ url:"https://cesarabarbosa.github.io/auladeceramica/", title:"Aula de Cerâmica" },
+  torno:   { url:"https://cesarabarbosa.github.io/torno/",           title:"Torno" },
+  esmalte: { url:"https://cesarabarbosa.github.io/esmalte/",         title:"Esmalte" }
+};
+const HOTMART_RE = /https?:\/\/hotmart\.com\/pt-br\/club\/aulasdeceramica\/community\/\d+\/post\/\d+/i;
+
+const $  = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+
+/* pequenas utilidades */
+function escapeHTML(str){ return str.replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;' }[m])) }
+function makeRegex(word){ const esc = word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); return new RegExp(esc,'i') }
+function snippetAround(text, word, span=180){
+  const re = makeRegex(word); const m = text.match(re);
+  if(!m) return escapeHTML(text.slice(0, span)) + (text.length>span?'…':'');
+  const i = m.index, start=Math.max(0,i-span/2|0), end=Math.min(text.length,i+word.length+span/2|0);
+  const left=start>0?'…':'', right=end<text.length?'…':'';
+  return left + escapeHTML(text.slice(start,i)) + '<mark>'+escapeHTML(text.slice(i,i+word.length))+'</mark>' + escapeHTML(text.slice(i+word.length,end)) + right;
+}
+function absolutizeURLs(root, baseURL){
+  ['href','src','data-src','poster'].forEach(attr=>{
+    $$(`[${attr}]`, root).forEach(el=>{
+      const val = el.getAttribute(attr); if(!val) return;
+      try{ new URL(val); }catch{ el.setAttribute(attr, new URL(val, baseURL).href); }
+    });
+  });
+}
+
+/* ========= CARREGAMENTO/RENDER ========= */
+const store = {}; // store[key] = { title, url, htmlString, index:[{id,text,link}] }
+let currentKey = 'ceramica';
+
+async function fetchAndPrepare(key){
+  if(store[key]) return store[key];
+  const {url, title} = PAGES[key];
+  const res = await fetch(url, {credentials:'omit'});
+  const html = await res.text();
+  const dom = new DOMParser().parseFromString(html, 'text/html');
+  const body = dom.body || dom;
+  body.querySelectorAll('script').forEach(s=>s.remove());
+  absolutizeURLs(body, url);
+
+  // indexação (associa trecho -> link hotmart mais próximo)
+  const index = buildPageIndex(body);
+  store[key] = { title, url, htmlString: body.innerHTML, index };
+  return store[key];
+}
+async function loadAll(){ await Promise.all(Object.keys(PAGES).map(fetchAndPrepare)); }
+
+function renderPage(key){
+  currentKey = key;
+  $('#viewerTitle').textContent = PAGES[key].title;
+  $('#viewerContent').innerHTML = store[key].htmlString;
+  $$('.tabbtn').forEach(b=> b.classList.toggle('active', b.dataset.key===key));
+}
+
+document.addEventListener('click', (e)=>{
+  const btn = e.target.closest('.tabbtn'); if(!btn) return;
+  const key = btn.dataset.key; if(!store[key]) return;
+  renderPage(key);
+});
+
+/* ========= INDEXAÇÃO ========= */
+function findNearestHotmartLink(node, root){
+  let a = $('a[href*="hotmart"]', node);
+  if(a && HOTMART_RE.test(a.href)) return a.href;
+
+  let cur = node;
+  for(let i=0;i<4 && cur && cur!==root; i++, cur=cur.parentElement){
+    const candidate = $('a[href*="hotmart"]', cur);
+    if(candidate && HOTMART_RE.test(candidate.href)) return candidate.href;
+
+    if(cur.parentElement){
+      const siblings = Array.from(cur.parentElement.children);
+      const idx = siblings.indexOf(cur);
+      for(const off of [1,-1,2,-2]){
+        const sib = siblings[idx+off]; if(!sib) continue;
+        const sA = $('a[href*="hotmart"]', sib);
+        if(sA && HOTMART_RE.test(sA.href)) return sA.href;
+      }
+    }
+  }
+
+  let next = node.nextElementSibling, steps=0;
+  while(next && steps<5){
+    const nA = $('a[href*="hotmart"]', next);
+    if(nA && HOTMART_RE.test(nA.href)) return nA.href;
+    next = next.nextElementSibling; steps++;
+  }
+  return null;
+}
+function buildPageIndex(root){
+  const blocks = $$('.c, p, li, td, th, div, article, section', root)
+                 .filter(el => el.innerText && el.innerText.trim().length > 8);
+
+  const idx = [];
+  const seen = new Set();
+  let seq = 0;
+
+  for(const el of blocks){
+    const text = el.innerText.replace(/\s+/g,' ').trim();
+    if(text.length < 12) continue;
+
+    const link = findNearestHotmartLink(el, root);
+    if(!link || !HOTMART_RE.test(link)) continue;
+
+    const sig = link + '|' + text.slice(0,160);
+    if(seen.has(sig)) continue; seen.add(sig);
+
+    const id = 'blk-' + (++seq);
+    el.setAttribute('data-hitid', id);
+    idx.push({ id, text, link });
+  }
+  return idx;
+}
+
+/* ========= BUSCA ========= */
+let hits = [];   // { key, id, text, link }
+let hitIndex = -1;
+
+function buildHits(word){
+  hits = [];
+  const re = makeRegex(word);
+  for(const key of Object.keys(PAGES)){
+    const page = store[key]; if(!page) continue;
+    for(const item of page.index){
+      if(re.test(item.text)){ hits.push({ key, ...item }); }
+    }
+  }
+}
+
+function highlightAndCenter(h){
+  if(currentKey !== h.key) renderPage(h.key);
+  // limpar destaques existentes
+  $$('#viewerContent .hit-highlight').forEach(n=>n.classList.remove('hit-highlight'));
+  const node = $(`[data-hitid="${h.id}"]`, $('#viewerContent'));
+  if(node){
+    node.classList.add('hit-highlight');
+    node.scrollIntoView({behavior:'smooth', block:'center'}); // rola só o VISOR
+  }
+}
+
+function updateTopStatus(word){
+  if(hitIndex < 0 || hitIndex >= hits.length){
+    $('#resultCounter').textContent = '0/0';
+    $('#resultSnippet').innerHTML = '<em>Nada encontrado.</em>';
+    const l = $('#resultLink'); l.style.display='none'; l.removeAttribute('href'); l.textContent='';
+    return;
+  }
+  const h = hits[hitIndex];
+  $('#resultCounter').textContent = `${hitIndex+1}/${hits.length}`;
+  $('#resultSnippet').innerHTML = `<strong>${PAGES[h.key].title}:</strong> ${snippetAround(h.text, word)}`;
+  const l = $('#resultLink'); l.href = h.link; l.textContent = h.link; l.style.display='inline';
+  highlightAndCenter(h);
+}
+
+/* ========= MEDIR TOPO ========= */
+function measureTop(){
+  const th = $('#topbar')?.offsetHeight || 0;
+  document.documentElement.style.setProperty('--topbar-h', th + 'px');
+  $('#spacer').style.height = th + 'px';
+}
+addEventListener('load', measureTop);
+addEventListener('resize', measureTop);
+
+/* ========= EVENTOS ========= */
+$('#searchForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const q = $('#q').value.trim();
+  if(!q){ $('#resultCounter').textContent='0/0'; $('#resultSnippet').innerHTML='<em>Digite uma palavra para buscar.</em>'; $('#resultLink').style.display='none'; return; }
+
+  await loadAll();
+  buildHits(q);
+  if(!hits.length){ updateTopStatus(q); return; }
+  hitIndex = 0; updateTopStatus(q);
+});
+$('#prevBtn').addEventListener('click', ()=>{
+  if(!hits.length) return;
+  hitIndex = (hitIndex - 1 + hits.length) % hits.length;
+  updateTopStatus($('#q').value.trim());
+});
+$('#nextBtn').addEventListener('click', ()=>{
+  if(!hits.length) return;
+  hitIndex = (hitIndex + 1) % hits.length;
+  updateTopStatus($('#q').value.trim());
+});
+
+/* ========= INICIALIZAÇÃO ========= */
+(async function init(){
+  await loadAll();
+  renderPage('ceramica');  // começa na aba Cerâmica
+  measureTop();
+})();
+</script>
+</body>
+</html>
