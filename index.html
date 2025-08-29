@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Conteúdo das Aulas de Cerâmica – Buscador</title>
+<meta name="color-scheme" content="light dark">
+<style>
+  :root{
+    --ink:#0b0b0b; --muted:#3a3a3a; --line:#000; --teal:#49d1d1; --card:#fff; --bg:#f4fbfb; --accent:#2563eb;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --ink:#f1f1f1; --muted:#bfbfbf; --line:#e5e5e5; --teal:#2aa9a9; --card:#111; --bg:#0b0b0b; --accent:#7aa2ff; }
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+
+  /* TOPO */
+  .topbar{ background:var(--teal); padding:18px 16px 10px; border-bottom:4px solid var(--line)}
+  .title{ margin:0; text-align:center; font-weight:900; letter-spacing:.3px;
+          font-size:clamp(24px,4.4vw,42px); text-transform:uppercase}
+  .results-head{ text-align:center; font-weight:900; margin:8px 0 6px 0; font-size:18px }
+
+  .results-box{
+    max-width:1100px; margin:0 auto; background:#fff; border:3px solid var(--line);
+    border-radius:16px; padding:12px;
+  }
+  .results-content{ min-height:56px; line-height:1.35 }
+  .results-meta{ display:flex; justify-content:space-between; align-items:center; font-size:13px; margin-top:6px }
+  .nav-arrows{ display:flex; gap:14px; justify-content:center; align-items:center; margin-top:8px }
+  .nav-btn{
+    width:44px; height:44px; border-radius:50%; display:grid; place-items:center;
+    font-size:22px; font-weight:900; background:#fff; border:2px solid #000; cursor:pointer
+  }
+  .counter{ font-weight:800 }
+
+  .search-row{ display:grid; grid-template-columns:1fr auto; gap:10px; max-width:1100px; margin:12px auto 4px; align-items:center }
+  .search-input{ display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center }
+  label{ font-weight:800 }
+  input[type="text"]{ width:100%; border:2px solid #000; border-radius:999px; padding:10px 14px; font-size:18px; background:#fff; color:#000 }
+  button#searchBtn{ cursor:pointer; border:2px solid #000; border-radius:999px; padding:10px 16px; font-weight:800; background:#fff }
+  .sr-only{position:absolute; left:-9999px}
+
+  /* GRID 3 COLUNAS */
+  .columns{
+    display:grid; grid-template-columns:1fr 1fr 1fr;
+    height: calc(100vh - 300px);
+    max-width:1400px; margin:10px auto 20px;
+    border-left:6px solid #000; border-right:6px solid #000;
+    gap:0;
+  }
+  .col{ display:flex; flex-direction:column; min-width:0; background:#fff; border-left:6px solid #000 }
+  .col:first-child{ border-left:none }
+  .col h2{
+    margin:0; padding:10px 12px; background:#cfcfcf; text-align:center;
+    font-size:clamp(18px,3vw,34px); font-weight:900; text-transform:uppercase; border-bottom:4px solid #000;
+  }
+  .scroll{
+    flex:1; overflow:auto; padding:8px; scroll-behavior:smooth;
+    /* “compressão” agradável de leitura */
+    font-size:14px; line-height:1.25;
+  }
+  /* Normalização do conteúdo injetado para caber na coluna */
+  .col .content *{ max-width:100% !important; }
+  .col .content img, .col .content video, .col .content iframe{ display:block; height:auto; max-width:100% !important }
+  .col .content table{ width:100% !important; border-collapse:collapse; table-layout:fixed }
+  .col .content td, .col .content th{ word-wrap:break-word; vertical-align:top }
+  .col .content a{ word-break:break-all }
+  .col .content p{ margin:6px 0 }
+  .col .content h1, .col .content h2, .col .content h3{ font-size:1em; margin:.6em 0 .4em }
+  .col .content ul, .col .content ol{ padding-left:18px; margin:6px 0 }
+
+  /* Destaques de resultado */
+  .hit-highlight{ outline:3px solid #ffb100; background:#fff6c5 }
+  mark{ background:#fff283; padding:0 .12em }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <h1 class="title">CONTEÚDO DAS AULAS DE CERÂMICA</h1>
+
+  <div class="results-head">RESULTADOS ENCONTRADOS</div>
+  <div class="results-box" id="resultsBox">
+    <div class="results-content" id="resultContent">
+      <em style="opacity:.8">Faça uma busca abaixo. Navegue pelos resultados e clique no link para acessar.</em>
+    </div>
+    <div class="results-meta">
+      <div id="resultSource"></div>
+      <div class="counter" id="resultCounter"></div>
+    </div>
+    <div class="nav-arrows">
+      <button class="nav-btn" id="prevBtn" title="Anterior" aria-label="Resultado anterior">◀</button>
+      <button class="nav-btn" id="nextBtn" title="Próximo" aria-label="Próximo resultado">▶</button>
+    </div>
+  </div>
+
+  <div class="search-row">
+    <div class="search-input">
+      <label for="q">Buscar por palavra-chave</label>
+      <form id="searchForm" style="display:contents">
+        <input id="q" name="q" type="text" placeholder="Ex.: barbotina, fornecedor, torno..." required />
+        <button id="searchBtn" type="submit">BUSCAR</button>
+      </form>
+    </div>
+    <div class="sr-only" aria-live="polite" id="live"></div>
+  </div>
+</header>
+
+<main class="columns">
+  <section class="col" id="col-ceramica">
+    <h2>Aula de Cerâmica</h2>
+    <div class="scroll"><div class="content" id="content-ceramica">Carregando…</div></div>
+  </section>
+
+  <section class="col" id="col-torno">
+    <h2>Torno</h2>
+    <div class="scroll"><div class="content" id="content-torno">Carregando…</div></div>
+  </section>
+
+  <section class="col" id="col-esmalte">
+    <h2>Esmalte</h2>
+    <div class="scroll"><div class="content" id="content-esmalte">Carregando…</div></div>
+  </section>
+</main>
+
+<script>
+/* =================== URLs =================== */
+const CERAMICA_URL = "https://cesarabarbosa.github.io/auladeceramica";
+const TORNO_URL    = "https://cesarabarbosa.github.io/torno";
+const ESMALTE_URL  = "https://cesarabarbosa.github.io/esmalte";
+
+/* Padrão de link Hotmart */
+const HOTMART_RE = /https?:\/\/hotmart\.com\/pt-br\/club\/aulasdeceramica\/community\/\d+\/post\/\d+/i;
+
+/* Helpers */
+const $  = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+function escapeHTML(str){ return str.replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;' }[m])) }
+function makeRegex(word){ const esc = word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); return new RegExp(esc,'i') }
+function snippetAround(text, word, span=180){
+  const re = makeRegex(word); const m = text.match(re);
+  if(!m) return escapeHTML(text.slice(0, span)) + (text.length>span?'…':'');
+  const i = m.index, start=Math.max(0,i-span/2|0), end=Math.min(text.length, i+word.length+span/2|0);
+  const left = start>0?'…':'', right=end<text.length?'…':'';
+  return left + escapeHTML(text.slice(start,i)) + '<mark>'+escapeHTML(text.slice(i,i+word.length))+'</mark>' + escapeHTML(text.slice(i+word.length,end)) + right;
+}
+
+/* =================== Carregar e injetar HTML =================== */
+const columns = {
+  ceramica: { url:CERAMICA_URL, box:$('#content-ceramica'), scroll:$('#content-ceramica').parentElement, name:'Aula de Cerâmica' },
+  torno:    { url:TORNO_URL,    box:$('#content-torno'),    scroll:$('#content-torno').parentElement,    name:'Torno' },
+  esmalte:  { url:ESMALTE_URL,  box:$('#content-esmalte'),  scroll:$('#content-esmalte').parentElement,  name:'Esmalte' },
+};
+
+async function loadColumn(col){
+  try{
+    const res = await fetch(col.url, {mode:'cors', credentials:'omit'});
+    const html = await res.text();
+    // Parsear e pegar apenas o conteúdo principal (body)
+    const dom = new DOMParser().parseFromString(html, 'text/html');
+    // Clonamos body para manter links/fotos
+    const body = dom.body.cloneNode(true);
+    // Remover scripts por segurança
+    body.querySelectorAll('script').forEach(s=>s.remove());
+    // Injetar
+    col.box.innerHTML = body.innerHTML || html;
+  }catch(e){
+    col.box.innerHTML = `<em>Falha ao carregar <a href="${col.url}" target="_blank" rel="noopener">abrir página</a></em>`;
+  }
+}
+
+async function loadAll(){
+  await Promise.all(Object.values(columns).map(loadColumn));
+}
+loadAll();
+
+/* =================== Busca =================== */
+let hits = []; // {colKey, source, node, text, link}
+let hitIndex = -1;
+
+function clearHighlights(){
+  Object.values(columns).forEach(c=>{
+    $$('.hit-highlight', c.box).forEach(n=>n.classList.remove('hit-highlight'));
+  });
+}
+
+function buildHits(word){
+  hits = [];
+  const reWord = makeRegex(word);
+
+  for(const [key, col] of Object.entries(columns)){
+    // cada "bloco" que contenha um link da Hotmart
+    const anchors = $$('a', col.box).filter(a => HOTMART_RE.test(a.href));
+    const seen = new Set();
+
+    for(const a of anchors){
+      const container = a.closest('td, p, div, article, section, tr, li') || a.parentElement;
+      if(!container) continue;
+
+      const text = container.innerText.replace(/\s+/g,' ').trim();
+      if(!reWord.test(text)) continue;
+
+      const sig = a.href + '|' + (container.textContent||'').slice(0,120);
+      if(seen.has(sig)) continue; seen.add(sig);
+
+      hits.push({ colKey:key, source:columns[key].name, node:container, text, link:a.href });
+    }
+  }
+}
+
+function renderHit(word){
+  clearHighlights();
+  if(hitIndex < 0 || hitIndex >= hits.length) return;
+
+  const h = hits[hitIndex];
+  const {scroll} = columns[h.colKey];
+
+  // Destaque local + rolagem
+  h.node.classList.add('hit-highlight');
+  h.node.scrollIntoView({behavior:'smooth', block:'center'});
+
+  // Caixa superior
+  $('#resultContent').innerHTML =
+    `<div style="font-size:14px;opacity:.75;margin-bottom:4px">${escapeHTML(h.source)}</div>
+     <div style="font-size:16px">${snippetAround(h.text, word)}</div>
+     <div style="margin-top:6px"><a href="${h.link}" target="_blank" rel="noopener noreferrer">${h.link}</a></div>`;
+  $('#resultSource').textContent = 'Navegue pelos resultados e clique no link para acessar.';
+  $('#resultCounter').textContent = `${hitIndex+1} / ${hits.length}`;
+}
+
+function showMsg(m){
+  $('#resultContent').innerHTML = `<em>${escapeHTML(m)}</em>`;
+  $('#resultSource').textContent = '';
+  $('#resultCounter').textContent = '';
+}
+
+$('#searchForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const q = $('#q').value.trim();
+  if(!q){ showMsg('Digite uma palavra para buscar.'); return; }
+
+  // Garante que o conteúdo foi carregado
+  await loadAll();
+
+  buildHits(q);
+
+  if(hits.length === 0){ showMsg('Nada encontrado.'); return; }
+  hitIndex = 0;
+  renderHit(q);
+  $('#live').textContent = `${hits.length} resultado(s)`;
+});
+
+$('#prevBtn').addEventListener('click', ()=>{
+  if(!hits.length) return;
+  hitIndex = (hitIndex - 1 + hits.length) % hits.length;
+  renderHit($('#q').value.trim());
+});
+$('#nextBtn').addEventListener('click', ()=>{
+  if(!hits.length) return;
+  hitIndex = (hitIndex + 1) % hits.length;
+  renderHit($('#q').value.trim());
+});
+
+/* Foco inicial */
+window.addEventListener('load', ()=>$('#q').focus());
+</script>
+</body>
+</html>
