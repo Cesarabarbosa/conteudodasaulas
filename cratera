@@ -1,0 +1,110 @@
+<!doctype html>
+
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Esmalte Cratera — Artigo + Aulas Online</title>
+  <meta name="description" content="Mensagem com link para artigo sobre técnica do esmalte cratera e convite para conhecer as aulas online de cerâmica do César Augusto Barbosa." />
+  <style>
+    :root{
+      --bg: #f8fafc;         /* cinza bem claro */
+      --card: #ffffff;        /* branco */
+      --text: #0f172a;        /* slate-900 */
+      --muted: #475569;       /* slate-600 */
+      --primary: #0ea5e9;     /* azul para CTA */
+      --primary-contrast: #ffffff;
+      --accent: #10b981;      /* verde suave */
+      --radius: 16px;
+      --shadow: 0 10px 30px rgba(2,6,23,.06);
+    }
+    html,body{height:100%;}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .wrap{
+      max-width: 760px;
+      margin: clamp(16px,4vw,48px) auto;
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: clamp(20px,4vw,40px);
+    }
+    h1{
+      font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+      line-height:1.2;
+      margin: 16px 0 8px;
+    }
+    .lead{
+      color: var(--muted);
+      margin-top:0;
+      margin-bottom: 20px;
+    }
+    p{margin: 0 0 14px;}
+    .cta{
+      display: grid;
+      gap: 12px;
+      margin: 18px 0 28px;
+    }
+    .btn{
+      display:inline-block;
+      text-decoration:none;
+      font-weight:600;
+      padding: 14px 18px;
+      border-radius: 12px;
+      border: 2px solid transparent;
+      transition: transform .06s ease, box-shadow .2s ease, background .2s ease, color .2s ease;
+      will-change: transform;
+    }
+    .btn:active{ transform: translateY(1px); }
+    .btn-primary{ background: var(--primary); color: var(--primary-contrast); box-shadow: 0 6px 16px rgba(14,165,233,.25); }
+    .btn-primary:hover{ filter: brightness(1.03); }
+    .btn-outline{ background: #ffffff; color: var(--text); border-color: #e2e8f0; }
+    .btn-outline:hover{ background:#f1f5f9; }
+    .note{ font-size: .95rem; color: var(--muted); }
+    footer{
+      margin-top: 28px;
+      padding-top: 16px;
+      border-top: 1px solid #e5e7eb;
+      font-size: .92rem;
+      color: var(--muted);
+    }
+    img.top-image{
+      width: 100%;
+      height: auto;
+      border-radius: var(--radius) var(--radius) 0 0;
+      margin-bottom: 20px;
+    }
+    a:focus-visible, .btn:focus-visible{ outline: 3px dashed #94a3b8; outline-offset: 3px; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <img src="https://cesarabarbosa.github.io/conteudodasaulas/imagens/cratera.png" alt="Imagem da técnica do esmalte cratera" class="top-image" />
+    <h1>Oi! 👋</h1>
+    <p class="lead">Muita gente me pergunta sobre a <strong>técnica do esmalte cratera</strong>, e eu preparei um material especial explicando como funciona esse efeito incrível na cerâmica.</p><p>👉 Aqui está o link para você acessar:</p>
+<div class="cta">
+  <a class="btn btn-primary" href="https://drive.google.com/file/d/1f-GwidQ5x-n4KlnPVOubgbkaWuAWivzn/view?usp=drivesdk" target="_blank" rel="noopener noreferrer">📄 Clique aqui para ler o artigo</a>
+</div>
+
+<p>Além desse conteúdo, eu tenho uma <strong>plataforma completa de aulas online</strong>, com mais de <strong>500 aulas</strong> já disponíveis, onde ensino desde o básico até técnicas avançadas de torno, esmalte e acabamento.</p>
+
+<p>✨ O diferencial é que dentro da plataforma você também pode <strong>tirar dúvidas diretamente comigo</strong> e participar de um <strong>grupo exclusivo no WhatsApp</strong>.</p>
+
+<p>Se você quer aprender cerâmica de verdade, sem segredos e passo a passo, vem conhecer:</p>
+
+<div class="cta">
+  <a class="btn btn-outline" href="https://www.ateliedeceramicabarbosa.com.br/post/assinar-as-aulas-online" target="_blank" rel="noopener noreferrer">🔗 Aulas Online de Cerâmica</a>
+</div>
+
+<footer>
+  <div class="note">Conteúdo por César Augusto Barbosa — ceramista e professor. Siga no Instagram: <a href="https://www.instagram.com/cesaraugustobarbosa/" target="_blank" rel="noopener noreferrer">@cesaraugustobarbosa</a>.</div>
+</footer>
+
+  </main>
+</body>
+</html>
